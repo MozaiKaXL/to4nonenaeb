@@ -2,9 +2,202 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Молодец :/</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ffe4ec 0%, #e0f7fa 100%);
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 40px 30px;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 480px;
+      width: 100%;
+      animation: pop 0.5s ease;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(0.9); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .capybara {
+      display: block;
+      width: 160px;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin: 0 auto 15px;
+      animation: bounce 2s infinite ease-in-out;
+      box-shadow: 0 8px 20px rgba(214, 51, 108, 0.2);
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    h1 {
+      font-size: 32px;
+      margin: 0 0 15px;
+      color: #d6336c;
+    }
+
+    p {
+      font-size: 17px;
+      color: #555;
+      line-height: 1.5;
+      margin: 0 0 25px;
+    }
+
+    .flowers {
+      font-size: 28px;
+      letter-spacing: 8px;
+      margin-bottom: 25px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border: 2px solid #ffe4ec;
+      border-radius: 12px;
+      box-sizing: border-box;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      text-align: center;
+    }
+
+    input:focus {
+      border-color: #d6336c;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #d6336c, #f06595);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 8px 20px rgba(214, 51, 108, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(214, 51, 108, 0.4);
+    }
+
+    button:active { transform: translateY(0); }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+      min-height: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Молодец :/</h1>
+
+  <div class="card">
+    <img src="cfe7fb922a9a56ce7a10e68ac6d4fc53.png" alt="Капибара" class="capybara">
+
+    <h1>Молодец :/</h1>
+
+    <p>Капибара дарит тебе цветочки,<br>чтобы их получить — введи номер телефона</p>
+
+    <div class="flowers">🌸 🌷 🌺 🌻 🌼</div>
+
+    <form id="contactForm">
+      <input type="tel" id="phone" name="phone"
+             placeholder="+7 (999) 123-45-67" required>
+      <button type="submit" id="submitBtn">Получить цветочки 🌸</button>
+    </form>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    // ⚠️ ВСТАВЬТЕ СЮДА НОВЫЙ ТОКЕН И ВАШ CHAT ID
+    const BOT_TOKEN = '8256504046:AAGNNfk8HUPVGjmLIexX1kKI5cHu4cZD-34';
+    const CHAT_ID = '1182788244';
+
+    const form = document.getElementById('contactForm');
+    const statusEl = document.getElementById('status');
+    const btn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!phone) {
+        statusEl.textContent = 'Пожалуйста, введи номер 🌷';
+        statusEl.style.color = '#d6336c';
+        return;
+      }
+
+      statusEl.textContent = 'Отправляем...';
+      statusEl.style.color = '#888';
+      btn.disabled = true;
+
+      const message =
+        '🌸 Капибара получила номер!\n\n' +
+        '📞 ' + phone;
+
+      const url = 'https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage';
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: message,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+          statusEl.textContent = 'Спасибо!';
+          statusEl.style.color = '#2b8a3e';
+          form.reset();
+        } else {
+          throw new Error(data.description || 'Ошибка Telegram');
+        }
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Ошибка отправки. Попробуй позже.';
+        statusEl.style.color = '#c92a2a';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+
 </body>
 </html>
