@@ -20,14 +20,20 @@
       position: relative;
     }
 
-    /* Летающие фиолетовые сердечки на фоне */
+    /* Фоновые сердечки */
     .heart {
       position: absolute;
-      color: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.25); /* Чуть ярче, чтобы было видно, что на них можно нажать */
       font-size: 24px;
       animation: float 6s infinite ease-in-out alternate;
       user-select: none;
-      pointer-events: none;
+      cursor: pointer; /* Курсор-рука */
+      transition: transform 0.2s, color 0.2s;
+      z-index: 1;
+    }
+    .heart:hover {
+      transform: scale(1.3);
+      color: rgba(255, 255, 255, 0.8);
     }
     @keyframes float {
       0% { transform: translateY(0) scale(1); }
@@ -114,8 +120,6 @@
       align-items: center;
     }
     .date-btn:hover { background: #e0caff; }
-    
-    /* Выбранная дата */
     .date-btn.selected {
       background: #7b2cbf;
       color: white;
@@ -123,12 +127,11 @@
       transform: scale(1.05);
       box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
     }
-
     .date-btn span { font-size: 20px; margin-bottom: 5px; }
 
     #submitDateBtn {
-      display: none; /* Появится только после выбора */
-      background: #2b8a3e; /* Зеленая кнопка для действия */
+      display: none;
+      background: #2b8a3e;
     }
     #submitDateBtn:hover { background: #237032; }
 
@@ -138,11 +141,21 @@
       color: #5a189a;
       min-height: 20px;
     }
+
+    /* Секретная картинка */
+    .secret-img {
+      width: 100%;
+      max-height: 250px;
+      object-fit: cover;
+      border-radius: 16px;
+      margin-bottom: 15px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
 <body>
 
-  <!-- Генерация фоновых сердечек (через скрипт ниже) -->
+  <!-- Фоновые сердечки -->
   <div id="hearts-container"></div>
 
   <div class="slide-container">
@@ -150,26 +163,22 @@
     <!-- СЛАЙД 1 -->
     <div class="slide active" id="slide1">
       <div class="capybara">🐿️</div>
-      <h2>Бурундук может не только орешки красть и спать 👉👈</h2>
+      <h2>Бурундук может не только орешки красть) :/</h2>
       <button onclick="nextSlide(1)">Согласиться</button>
     </div>
 
     <!-- СЛАЙД 2 -->
     <div class="slide" id="slide2">
       <div class="capybara">🎬</div>
-      <h2>Бурундук очень хочет пригласить тебя в кино, поэтому решил сделать это так :/</h2>
-      <button onclick="openCalendar()">Сжалиться</button>
+      <h2>Бурундук очень хочет пригласить тебя в кино, поэтому решил сделать это так.</h2>
+      <button onclick="openCalendar()">Посмотрим</button>
     </div>
 
     <!-- СЛАЙД 3 (Календарь) -->
     <div class="slide" id="slide3">
       <div class="capybara">🗓️</div>
-      <h2>Выбери орешек:</h2>
-      
-      <div class="calendar" id="calendar">
-        <!-- Кнопки дат будут добавлены через JS -->
-      </div>
-
+      <h2>Выбери день:</h2>
+      <div class="calendar" id="calendar"></div>
       <button id="submitDateBtn" onclick="sendDate()">Передать бурундуку 🐿️</button>
       <div class="status" id="statusMsg"></div>
     </div>
@@ -177,29 +186,46 @@
     <!-- СЛАЙД 4 (Финальный) -->
     <div class="slide" id="slide4">
       <div class="capybara">✨</div>
-      <h2>Спасибо, что согласилась, уверен это было не просто, я очень ценю это.💜</h2>
+      <h2>Спасибо, что согласилась, уверен это было не просто, я ценю это.</h2>
+    </div>
+
+    <!-- СЛАЙД 5 (СЕКРЕТНЫЙ) -->
+    <div class="slide" id="slide5">
+      <!-- ⚠️ ЗАМЕНИТЕ secret.jpg НА ИМЯ ВАШЕГО ФАЙЛА С КАРТИНКОЙ -->
+      <img src="secret.jpg" alt="Секретная фотка" class="secret-img">
+      <h2>Ты нашла скрытую фотку)</h2>
+      <button onclick="returnFromSecret()">Вернуться к бурундуку</button>
     </div>
 
   </div>
 
   <script>
-    // ⚠️ ВСТАВЬТЕ СЮДА ВАШ НОВЫЙ ТОКЕН
-    const BOT_TOKEN = '8256504046:AAGNNfk8HUPVGjmLIexX1kKI5cHu4cZD-34';
+    // ⚠️ ВСТАВЬТЕ ВАШ ТОКЕН
+    const BOT_TOKEN = 'ВСТАВЬТЕ_ВАШ_ТОКЕН';
     const CHAT_ID = '1182788244';
     
     let selectedDate = null;
+    let currentSlideBeforeSecret = 1; // Запоминаем, где были
 
-    // --- 1. Генерация фоновых сердечек ---
+    // --- 1. Генерация кликабельных сердечек ---
     const heartsContainer = document.getElementById('hearts-container');
     const heartSymbols = ['💜', '💜', '🖤', '🤍'];
-    for (let i = 0; i < 20; i++) {
+    
+    for (let i = 0; i < 25; i++) {
       const heart = document.createElement('div');
       heart.className = 'heart';
       heart.innerText = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
-      heart.style.left = Math.random() * 100 + 'vw';
-      heart.style.top = Math.random() * 100 + 'vh';
+      heart.style.left = Math.random() * 90 + 'vw'; // Чуть отступаем от краев
+      heart.style.top = Math.random() * 90 + 'vh';
       heart.style.animationDelay = Math.random() * 5 + 's';
       heart.style.fontSize = (Math.random() * 20 + 15) + 'px';
+      
+      // Добавляем клик
+      heart.onclick = function() {
+        this.style.display = 'none'; // Сердечко лопается
+        openSecret();
+      };
+      
       heartsContainer.appendChild(heart);
     }
 
@@ -209,15 +235,29 @@
       document.getElementById('slide' + (currentId + 1)).classList.add('active');
     }
 
-    // --- 3. Логика календаря ---
-    function openCalendar() {
-      nextSlide(2); // Открываем 3-й слайд
+    // --- 3. Секретный слайд ---
+    function openSecret() {
+      // Запоминаем текущий активный слайд
+      const activeSlide = document.querySelector('.slide.active');
+      if (activeSlide && activeSlide.id !== 'slide5') {
+         currentSlideBeforeSecret = activeSlide.id;
+      }
       
-      const calendar = document.getElementById('calendar');
-      calendar.innerHTML = ''; // Очистка
+      // Открываем секретный
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      document.getElementById('slide5').classList.add('active');
+    }
 
-      // Генерируем 8 дат (например, следующие выходные или просто числа)
-      // Для красоты сделаем даты вида "12 Окт"
+    function returnFromSecret() {
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      document.getElementById(currentSlideBeforeSecret).classList.add('active');
+    }
+
+    // --- 4. Логика календаря ---
+    function openCalendar() {
+      nextSlide(2); 
+      const calendar = document.getElementById('calendar');
+      calendar.innerHTML = ''; 
       const today = new Date();
       const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
       
@@ -234,24 +274,18 @@
         btn.innerHTML = `<span>🌰</span>${dayNum}<br><small>${monthName}</small>`;
         
         btn.onclick = () => {
-          // Снимаем выделение со всех
           document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('selected'));
-          // Выделяем текущую
           btn.classList.add('selected');
           selectedDate = fullDateStr;
-          
-          // Показываем кнопку отправки
           document.getElementById('submitDateBtn').style.display = 'block';
         };
-        
         calendar.appendChild(btn);
       }
     }
 
-    // --- 4. Отправка в Telegram ---
+    // --- 5. Отправка в Telegram ---
     async function sendDate() {
       if (!selectedDate) return;
-
       const btn = document.getElementById('submitDateBtn');
       const status = document.getElementById('statusMsg');
       
@@ -271,7 +305,7 @@
         const data = await response.json();
         
         if (data.ok) {
-          nextSlide(3); // Переходим на финальный слайд "Спасибо"
+          nextSlide(3); 
         } else {
           throw new Error(data.description);
         }
